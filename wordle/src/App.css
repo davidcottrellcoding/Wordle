@@ -1,0 +1,52 @@
+.App {
+  min-width: 100vh;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.WordleTitle {
+  font-size: 30px;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 30px;
+}
+
+.WordleGrid {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  width: 400px;
+}
+
+.WordleLine {
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 5px;
+}
+
+.WordleLetterBox {
+  height: 70px;
+  width: 70px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-transform: capitalize;
+  font-size: 32px;
+  border: 1px black solid;
+}
+
+.correct {
+  background-color: green;
+}
+
+.misplaced {
+  background-color: yellow;
+}
+
+.nonexistent {
+  background-color: grey;
+}
