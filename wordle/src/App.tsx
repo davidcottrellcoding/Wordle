@@ -22,20 +22,20 @@ function App() {
   //     "X-RapidAPI-Host": "random-words5.p.rapidapi.com",
   //   },
   // };
-  // useEffect(() => {
-  //   const getWordFromApi = async () => {
-  //     const apiResponse = await fetch(API_URL, options);
-  //     const apiJson = await apiResponse.json();
 
-  //     dispatch(
-  //       changeAnswer(apiJson[Math.floor(Math.random() * apiJson.length)])
-  //     );
-  //   };
+  // const getWordFromApi = async () => {
+  //   const apiResponse = await fetch(API_URL, options);
+  //   const apiJson = await apiResponse.json();
+
+  //   dispatch(changeAnswer(apiJson[Math.floor(Math.random() * apiJson.length)]));
+  // };
+
+  // useEffect(() => {
   //   getWordFromApi();
   // }, []);
 
   useEffect(() => {
-    dispatch(changeAnswer("David"));
+    dispatch(changeAnswer("magic"));
     checkGameEnd(currentGuessNumber);
   }, [currentGuessNumber]);
 
@@ -138,10 +138,10 @@ function App() {
   };
 
   const gameOver = () => {
-    if (isGameOver && currentGuessNumber < 6) {
+    if ((isGameOver && currentGuessNumber < 6) || guesses[5] === answer) {
       return <div> YOU WON!</div>;
     } else if (isGameOver && currentGuessNumber === 6) {
-      return <div> You LOSE! </div>;
+      return <div> You LOSE! The word was {answer}</div>;
     }
   };
 
@@ -150,6 +150,7 @@ function App() {
     setCurrentGuess("");
     setCurrentGuessNumber(0);
     setIsGameOver(false);
+    // getWordFromApi();
   };
 
   return (
