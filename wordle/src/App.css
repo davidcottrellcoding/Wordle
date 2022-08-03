@@ -39,6 +39,15 @@
   border: 1px black solid;
 }
 
+.WordleEndGame {
+  height: 60px;
+  display: flex;
+  text-align: center;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
 .correct {
   background-color: green;
 }

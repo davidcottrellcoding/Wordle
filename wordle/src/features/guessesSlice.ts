@@ -14,7 +14,7 @@ const initialState: GuessesState = {
 };
 
 export const guessesSlice = createSlice({
-  name: "guesses",
+  name: "submittedGuesses",
   initialState,
   reducers: {
     addGuess: (state, action: PayloadAction<GuessPayload>) => {

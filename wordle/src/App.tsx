@@ -11,8 +11,8 @@ import { addGuess, clearGuess, GuessPayload } from "./features/guessesSlice";
 
 function App() {
   const [currentGuess, setCurrentGuess] = useState("");
-  const [currentGuessIndex, setCurrentGuessIndex] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
+  const [currentGuessIndex, setCurrentGuessIndex] = useState(0);
   const appRef = useRef<HTMLDivElement>(null);
 
   const dispatch = useDispatch();
@@ -22,7 +22,17 @@ function App() {
     return state.answer.value;
   });
 
-  const guesses = useSelector((state: RootState) => state.guesses.value);
+  const submittedGuesses = useSelector(
+    (state: RootState) => state.submittedGuesses.value
+  );
+
+  const previousGuessCorrect = () => {
+    if (currentGuessIndex === -1) {
+      return submittedGuesses[5] === answer;
+    } else {
+      return submittedGuesses[currentGuessIndex - 1] === answer;
+    }
+  };
   // const options = {
   //   method: "GET",
   //   headers: {
@@ -44,36 +54,46 @@ function App() {
 
   useEffect(() => {
     dispatch(changeAnswer("david"));
-  }, [dispatch]);
+  }, []);
 
   useEffect(() => {
-    const checkGameEnd = (currentGuessIndex: number) => {
-      if (guesses[currentGuessIndex - 1] === answer) {
+    const currentGuessIndex = submittedGuesses.findIndex(
+      (guess) => guess === null
+    );
+
+    const checkGameEnd = () => {
+      if (submittedGuesses[currentGuessIndex - 1] === answer) {
         setIsGameOver(true);
-      } else if (currentGuessIndex === 6) {
+      } else if (currentGuessIndex === -1) {
         setIsGameOver(true);
       }
     };
 
-    checkGameEnd(currentGuessIndex);
+    checkGameEnd();
+
+    //Keep the browser in focus to allow button presses after any keyboard event
     if (appRef && appRef.current) {
       appRef.current.focus();
     }
-  }, [answer, currentGuessIndex, guesses]);
+
+    setCurrentGuessIndex(currentGuessIndex);
+  }, [answer, submittedGuesses]);
 
   const onKeyDownHandler = (event: React.KeyboardEvent<HTMLInputElement>) => {
     const currentGuessPayload: GuessPayload = {
-      guess: currentGuess,
+      guess: currentGuess.toLowerCase(),
       number: currentGuessIndex,
     };
 
     if (isGameOver) {
+      if (event.code === "Enter") {
+        userResetGame();
+      }
       return;
     }
 
     if (event.code === "Enter" && currentGuess.length === 5) {
       dispatch(addGuess(currentGuessPayload));
-      setCurrentGuessIndex(currentGuessIndex + 1);
       setCurrentGuess("");
     } else if (event.code === "Backspace" && currentGuess.length > 0) {
       setCurrentGuess(currentGuess.slice(0, -1));
@@ -84,31 +104,66 @@ function App() {
     }
   };
 
-  const createLines = () => {
-    const lines = guesses.map((guess, index) => (
-      <Line guess={guess} lineIndex={index} />
+  const userResetGame = () => {
+    dispatch(clearGuess());
+    setCurrentGuess("");
+    setIsGameOver(false);
+    // getWordFromApi();
+  };
+
+  const GameOver = () => {
+    if (!isGameOver) return null;
+
+    if (previousGuessCorrect()) {
+      return (
+        <div>
+          <div> You Won!</div>
+          <div> Press Enter or click below to play!</div>
+        </div>
+      );
+    }
+    return (
+      <div>
+        <div> You LOSE! The word was {answer}</div>
+        <div> Press Enter or click below to try again!</div>
+      </div>
+    );
+  };
+
+  const Lines = () => {
+    const lines = submittedGuesses.map((guess, index) => (
+      <Line userGuess={guess} lineIndex={index} />
     ));
 
     return <div>{lines}</div>;
   };
 
-  const Line = ({ guess, lineIndex }: { guess: string; lineIndex: number }) => {
+  const Line = ({
+    userGuess,
+    lineIndex,
+  }: {
+    userGuess: string;
+    lineIndex: number;
+  }) => {
     const letterBoxCharacters = [];
-    const isCurrentGuess =
-      lineIndex === guesses.findIndex((value) => value == null);
+    const isCurrentGuess = lineIndex === currentGuessIndex;
+
+    // If it is the current guess push the current guess letters on, otherwise put the submitted values into box
     if (isCurrentGuess) {
       for (let i = 0; i < currentGuess.length; i++) {
         letterBoxCharacters.push(currentGuess[i]);
       }
-    } else if (guess) {
-      for (let i = 0; i < guess.length; i++) {
-        letterBoxCharacters.push(guess[i]);
+    } else if (userGuess) {
+      for (let i = 0; i < userGuess.length; i++) {
+        letterBoxCharacters.push(userGuess[i]);
       }
     }
 
+    //Fill rest of slots with empty string to make sure all boxes
     while (letterBoxCharacters.length < 5) {
       letterBoxCharacters.push("");
     }
+
     return (
       <div className={"WordleLine"}>
         {letterBoxCharacters.map((character, index) => (
@@ -132,43 +187,39 @@ function App() {
     isCurrentGuess: boolean;
   }) => {
     let letterBoxClassName = "WordleLetterBox";
-    if (isCurrentGuess) {
-      return <div className={letterBoxClassName}>{currentChar}</div>;
-    }
     if (currentChar === answer[index]) {
       letterBoxClassName += " correct";
     } else if (answer.includes(currentChar) && currentChar !== "") {
       letterBoxClassName += " misplaced";
-    } else {
+    } else if (!isCurrentGuess) {
       letterBoxClassName += " nonexistent";
     }
-    return <div className={letterBoxClassName}>{currentChar}</div>;
-  };
-
-  const gameOver = () => {
-    if ((isGameOver && currentGuessIndex < 6) || guesses[5] === answer) {
-      return <div> YOU WON!</div>;
-    } else if (isGameOver && currentGuessIndex === 6) {
-      return <div> You LOSE! The word was {answer}</div>;
-    }
-  };
-
-  const resetGame = () => {
-    dispatch(clearGuess());
-    setCurrentGuess("");
-    setCurrentGuessIndex(0);
-    setIsGameOver(false);
-    // getWordFromApi();
+    return (
+      <div className={isCurrentGuess ? "WordleLetterBox" : letterBoxClassName}>
+        {currentChar}
+      </div>
+    );
   };
 
   return (
-    <div className="App" tabIndex={0} onKeyDown={onKeyDownHandler} ref={appRef}>
+    <div
+      className="App"
+      tabIndex={-1}
+      onKeyDown={onKeyDownHandler}
+      ref={appRef}
+    >
       <div className={"WordleTitle"}>Wordle</div>
-      <div className={"WordleGrid"}>{createLines()}</div>
-      <div>{gameOver()}</div>
-      {isGameOver ? (
-        <button onClick={() => resetGame()}> Play again</button>
-      ) : null}
+      <div className={"WordleGrid"}>
+        <Lines />
+      </div>
+      <div className={"WordleEndGame"}>
+        {isGameOver ? (
+          <div>
+            <GameOver />
+            <button onClick={() => userResetGame()}> Play again</button>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

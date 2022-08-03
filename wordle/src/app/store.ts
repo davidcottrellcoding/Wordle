@@ -4,7 +4,7 @@ import answerReducer from "../features/answerSlice";
 
 export const store = configureStore({
   reducer: {
-    guesses: guessesReducer,
+    submittedGuesses: guessesReducer,
     answer: answerReducer,
   },
 });
