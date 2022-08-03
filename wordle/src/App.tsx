@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { RefObject, useEffect, useRef, useState } from "react";
 import logo from "./logo.svg";
 import "./App.css";
 import { useDispatch, useSelector } from "react-redux";
@@ -11,10 +11,18 @@ import { addGuess, clearGuess, GuessPayload } from "./features/guessesSlice";
 
 function App() {
   const [currentGuess, setCurrentGuess] = useState("");
-  const [currentGuessNumber, setCurrentGuessNumber] = useState(0);
+  const [currentGuessIndex, setCurrentGuessIndex] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
+  const appRef = useRef<HTMLDivElement>(null);
 
   const dispatch = useDispatch();
+
+  //Typically would hold both these in local state but wanted to show react-redux experience
+  const answer = useSelector((state: RootState) => {
+    return state.answer.value;
+  });
+
+  const guesses = useSelector((state: RootState) => state.guesses.value);
   // const options = {
   //   method: "GET",
   //   headers: {
@@ -35,14 +43,28 @@ function App() {
   // }, []);
 
   useEffect(() => {
-    dispatch(changeAnswer("magic"));
-    checkGameEnd(currentGuessNumber);
-  }, [currentGuessNumber]);
+    dispatch(changeAnswer("david"));
+  }, [dispatch]);
+
+  useEffect(() => {
+    const checkGameEnd = (currentGuessIndex: number) => {
+      if (guesses[currentGuessIndex - 1] === answer) {
+        setIsGameOver(true);
+      } else if (currentGuessIndex === 6) {
+        setIsGameOver(true);
+      }
+    };
+
+    checkGameEnd(currentGuessIndex);
+    if (appRef && appRef.current) {
+      appRef.current.focus();
+    }
+  }, [answer, currentGuessIndex, guesses]);
 
   const onKeyDownHandler = (event: React.KeyboardEvent<HTMLInputElement>) => {
     const currentGuessPayload: GuessPayload = {
       guess: currentGuess,
-      number: currentGuessNumber,
+      number: currentGuessIndex,
     };
 
     if (isGameOver) {
@@ -51,7 +73,7 @@ function App() {
 
     if (event.code === "Enter" && currentGuess.length === 5) {
       dispatch(addGuess(currentGuessPayload));
-      setCurrentGuessNumber(currentGuessNumber + 1);
+      setCurrentGuessIndex(currentGuessIndex + 1);
       setCurrentGuess("");
     } else if (event.code === "Backspace" && currentGuess.length > 0) {
       setCurrentGuess(currentGuess.slice(0, -1));
@@ -61,20 +83,6 @@ function App() {
       return;
     }
   };
-
-  const checkGameEnd = (currentGuessNumber: number) => {
-    if (guesses[currentGuessNumber - 1] === answer) {
-      setIsGameOver(true);
-    } else if (currentGuessNumber === 6) {
-      setIsGameOver(true);
-    }
-  };
-
-  const answer = useSelector((state: RootState) => {
-    return state.answer.value;
-  });
-
-  const guesses = useSelector((state: RootState) => state.guesses.value);
 
   const createLines = () => {
     const lines = guesses.map((guess, index) => (
@@ -123,24 +131,24 @@ function App() {
     index: number;
     isCurrentGuess: boolean;
   }) => {
-    const isFinished = !isCurrentGuess;
-
-    if (!isFinished) {
-      return <div className={"WordleLetterBox"}>{currentChar}</div>;
+    let letterBoxClassName = "WordleLetterBox";
+    if (isCurrentGuess) {
+      return <div className={letterBoxClassName}>{currentChar}</div>;
     }
     if (currentChar === answer[index]) {
-      return <div className={"WordleLetterBox correct"}>{currentChar}</div>;
+      letterBoxClassName += " correct";
     } else if (answer.includes(currentChar) && currentChar !== "") {
-      return <div className={"WordleLetterBox misplaced"}>{currentChar}</div>;
+      letterBoxClassName += " misplaced";
     } else {
-      return <div className={"WordleLetterBox nonexistent"}>{currentChar}</div>;
+      letterBoxClassName += " nonexistent";
     }
+    return <div className={letterBoxClassName}>{currentChar}</div>;
   };
 
   const gameOver = () => {
-    if ((isGameOver && currentGuessNumber < 6) || guesses[5] === answer) {
+    if ((isGameOver && currentGuessIndex < 6) || guesses[5] === answer) {
       return <div> YOU WON!</div>;
-    } else if (isGameOver && currentGuessNumber === 6) {
+    } else if (isGameOver && currentGuessIndex === 6) {
       return <div> You LOSE! The word was {answer}</div>;
     }
   };
@@ -148,13 +156,13 @@ function App() {
   const resetGame = () => {
     dispatch(clearGuess());
     setCurrentGuess("");
-    setCurrentGuessNumber(0);
+    setCurrentGuessIndex(0);
     setIsGameOver(false);
     // getWordFromApi();
   };
 
   return (
-    <div className="App" tabIndex={0} onKeyDown={onKeyDownHandler}>
+    <div className="App" tabIndex={0} onKeyDown={onKeyDownHandler} ref={appRef}>
       <div className={"WordleTitle"}>Wordle</div>
       <div className={"WordleGrid"}>{createLines()}</div>
       <div>{gameOver()}</div>
